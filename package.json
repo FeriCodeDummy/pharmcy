@@ -7,7 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:backend": "jest app/api/__tests__ --runInBand",
+    "test:frontend": "jest --testPathIgnorePatterns=app/api/__tests__"
   },
   "dependencies": {
     "@testing-library/user-event": "^14.6.1",
