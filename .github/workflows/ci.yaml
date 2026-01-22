@@ -109,14 +109,24 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Choose image tag
+        id: imgtag
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "production" ]; then
+            echo "tag=prod" >> $GITHUB_OUTPUT
+          else
+            echo "tag=dev" >> $GITHUB_OUTPUT
+          fi
+      
+
       - name: Docker metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=${{ steps.imgtag.outputs.tag }}
             type=sha
-            type=raw,value=latest
 
       - name: Build & push
         uses: docker/build-push-action@v6
@@ -124,9 +134,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            type=raw,value=${{ github.ref_name == 'production' && 'prod' || 'dev' }}
-            type=sha
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
   deploy-dev:
