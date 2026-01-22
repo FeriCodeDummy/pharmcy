@@ -11,7 +11,7 @@ export interface IDBSettings {
 
 const GetDBSettings = () => {
     const socketPath = process.env.DB_SOCKET?.trim();
-
+    console.log(socketPath);
     return {
         socketPath,
         user: process.env.DB_USER!,
