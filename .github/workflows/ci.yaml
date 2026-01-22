@@ -1,5 +1,13 @@
 name: CI
 
+
+env:
+  NODE_VERSION: 20
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/pharmacy
+  GCP_REGION: europe-west10
+  CLOUD_RUN_SERVICE: pharmacy # <-- change
+  CLOUDSQL_INSTANCE: ${{ secrets.CLOUDSQL_INSTANCE }}
+
 on:
   push:
     branches:
@@ -56,3 +64,97 @@ jobs:
         with:
           name: frontend-coverage
           path: coverage
+  build:
+    name: Build (Next.js)
+    runs-on: ubuntu-latest
+    needs: [frontend-tests, backend-tests]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Next build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next
+            public
+            package.json
+            package-lock.json
+            next.config.*
+    
+
+  docker:
+    name: Build & Push Docker image
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy to Cloud Run (with Cloud SQL)
+    runs-on: ubuntu-latest
+    needs: docker
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${{ env.CLOUD_RUN_SERVICE }}" \
+            --region "${{ env.GCP_REGION }}" \
+            --image "docker.io/${{ env.IMAGE_NAME }}:latest" \
+            --platform managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances "${{ env.CLOUDSQL_INSTANCE }}" \
+            --set-env-vars "DB_HOST=127.0.0.1,DB_PORT=3306,DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_NAME=${{ secrets.DB_NAME }}"

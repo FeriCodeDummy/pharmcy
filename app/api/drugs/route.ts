@@ -8,7 +8,7 @@ function normalize(row: any) {
 }
 
 export async function GET() {
-    const [rows] = await pool.query<any[]>("SELECT drug.*, stock FROM drug JOIN Inventory ON fk_drug = idDrug ORDER BY name");
+    const [rows] = await pool.query<any[]>("SELECT drug.*, stock FROM drug JOIN inventory ON fk_drug = idDrug ORDER BY name");
     console.log(rows.map(normalize));
     return NextResponse.json(rows.map(normalize));
 }
@@ -28,14 +28,14 @@ export async function POST(req: Request) {
     const id = res.insertId as number;
 
     try {
-        const sql = "INSERT INTO Inventory (`idInventory`, `stock`, `fk_drug`) VALUES (NULL, ?, ?);"
+        const sql = "INSERT INTO inventory (`idInventory`, `stock`, `fk_drug`) VALUES (NULL, ?, ?);"
         let _params = [stock, id]
         const [res] = await pool.execute(sql, _params);
     } catch (e){
         console.error(e);
     }
 
-    const [rows] = await pool.query<DrugEntity[]>("SELECT drug.*m, quantity FROM drug JOIN Inventory ON idDrug = fk_drug WHERE idDrug = ?", [id]);
+    const [rows] = await pool.query<DrugEntity[]>("SELECT drug.*m, quantity FROM drug JOIN inventory ON idDrug = fk_drug WHERE idDrug = ?", [id]);
     return NextResponse.json(normalize(rows[0]), { status: 201 });
 }
 
