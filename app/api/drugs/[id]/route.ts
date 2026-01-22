@@ -9,7 +9,7 @@ export async function PUT(
     const id = Number((await context.params).id);
     const body = await request.json();
     console.log(body);
-    await pool.query('UPDATE Inventory SET stock = stock + ? WHERE fk_Drug = ?', [body.stock, id]);
+    await pool.query('UPDATE inventory SET stock = stock + ? WHERE fk_Drug = ?', [body.stock, id]);
 
     if (!body.stock) {
         return NextResponse.json({ error: "Stock is required" }, { status: 400 });
@@ -17,7 +17,7 @@ export async function PUT(
 
 
     // Fetch updated row for confirmation
-    const [rows]: any = await pool.query(`SELECT drug.*, stock FROM drug JOIN Inventory on fk_drug = idDrug WHERE idDrug=?`, [id]);
+    const [rows]: any = await pool.query(`SELECT drug.*, stock FROM drug JOIN inventory on fk_drug = idDrug WHERE idDrug=?`, [id]);
     const updated = rows[0];
     if (!updated)
         return NextResponse.json({ error: "Not found" }, { status: 404 });
