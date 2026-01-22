@@ -95,11 +95,14 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Upload scanner metadata
-        uses: actions/upload-artifact@v4
+      - name: Check Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          name: sonar-scannerwork
-          path: .scannerwork/report-task.txt
+          scanMetadataReportFile: .scannerwork/report-task.txt
+        timeout-minutes: 5
+
   build:
     name: Build (Next.js)
     runs-on: ubuntu-latest
@@ -174,27 +177,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  quality-gate:
-    name: SonarCloud Quality Gate
-    runs-on: ubuntu-latest
-    needs: sonar
-    steps:
-      - name: Download scanner metadata
-        uses: actions/download-artifact@v4
-        with:
-          name: sonar-scannerwork
-          path: .scannerwork
-
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check Quality Gate
-        uses: SonarSource/sonarqube-quality-gate-action@v1.1.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        timeout-minutes: 5
-
   deploy-dev:
     if: github.ref_name == 'main'
     name: Deploy (Development)
@@ -222,7 +204,7 @@ jobs:
   deploy-prod:
     if: github.ref_name == 'production'
     name: Deploy (Production)
-    needs: [docker, quality-gate]
+    needs: [docker, sonar]
     runs-on: ubuntu-latest
     environment: Production
     steps:
