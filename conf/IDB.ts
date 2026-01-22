@@ -8,11 +8,15 @@ export interface IDBSettings {
     connectionLimit: number,
     namedPlaceholders: boolean,
 }
-
-const GetDBSettings = (): IDBSettings => {
+const socketPath = process.env.DB_SOCKET;
+const GetDBSettings = () => {
     return {
-        host: process.env.DB_HOST!,
-        port: parseInt(process.env.DB_PORT!) ?? 3306,
+        ...(socketPath
+            ? { socketPath } // Cloud Run + Cloud SQL
+            : {
+                host: process.env.DB_HOST,       // local/dev
+                port: Number(process.env.DB_PORT ?? 3306),
+            }),
         user: process.env.DB_USER!,
         password: process.env.DB_PASSWORD!,
         database: process.env.DB_NAME!,
