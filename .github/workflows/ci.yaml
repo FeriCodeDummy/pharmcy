@@ -157,4 +157,4 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --add-cloudsql-instances "${{ env.CLOUDSQL_INSTANCE }}" \
-            --set-env-vars "DB_HOST=127.0.0.1,DB_PORT=3306,DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_NAME=${{ secrets.DB_NAME }}"
+            --set-env-vars "DB_SOCKET=${{ secrets.DB_SOCKET }},DB_PORT=3306,DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_NAME=${{ secrets.DB_NAME }}"
