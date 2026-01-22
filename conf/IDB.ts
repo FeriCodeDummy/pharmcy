@@ -9,27 +9,19 @@ export interface IDBSettings {
     namedPlaceholders: boolean,
 }
 
-const GetDBSettings = (): IDBSettings => {
-    /*return {
-        host: process.env.host!,
-        port: parseInt(process.env.port!),
-        user: process.env.user!,
-        password: process.env.password ?? '',
-        database: process.env.database!,
-        waitForConnections: true,
-        connectionLimit: 10,
-        namedPlaceholders: true,
-    }*/
+const GetDBSettings = () => {
+    const socketPath = process.env.DB_SOCKET?.trim();
+    console.log(socketPath);
     return {
-        host: 'localhost',
-        port: 3306,
-        user: 'root',
-        password: '',
-        database: 'pharmacy',
+        socketPath,
+        user: process.env.DB_USER!,
+        password: process.env.DB_PASSWORD!,
+        database: process.env.DB_NAME!,
         waitForConnections: true,
         connectionLimit: 10,
         namedPlaceholders: true,
-    }
-}
+    };
 
+
+};
 export default GetDBSettings;
